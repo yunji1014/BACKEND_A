@@ -1,5 +1,5 @@
 
---user
+-- user
 CREATE TABLE IF NOT EXISTS users (
     id          BIGINT          NOT NULL AUTO_INCREMENT,
     username    VARCHAR(50)     NOT NULL,  -- 로그인 아이디 (고유)
@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
     role        VARCHAR(20)     NOT NULL,  -- CREATOR | CLASSMATE
     created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT pk_users         PRIMARY KEY (id),
-    CONSTRAINT uk_users_username UNIQUE (username)
+    CONSTRAINT pk_users         PRIMARY KEY (id), -- 유저 아이디 PK
+    CONSTRAINT uk_users_username UNIQUE (username) -- 로그인 아이디 고유값
     );
 
 -- LECTURES (강의)
@@ -30,8 +30,8 @@ CREATE TABLE IF NOT EXISTS lectures (
 
     CONSTRAINT pk_lectures          PRIMARY KEY (id),
     CONSTRAINT fk_lectures_creator  FOREIGN KEY (creator_id) REFERENCES users (id),
-    CONSTRAINT chk_capacity         CHECK (capacity > 0),
-    CONSTRAINT chk_current_count    CHECK (current_count >= 0),
+    CONSTRAINT chk_capacity         CHECK (capacity > 0), -- 최대 수강 인원은 최소 1명이상
+    CONSTRAINT chk_current_count    CHECK (current_count >= 0), -- 마이너스면 안됨
     CONSTRAINT chk_price            CHECK (price >= 0),
     CONSTRAINT chk_dates            CHECK (end_date >= start_date)
     );
@@ -42,10 +42,10 @@ CREATE TABLE IF NOT EXISTS enrollments (
     lecture_id      BIGINT      NOT NULL,
     user_id         BIGINT      NOT NULL,
     status          VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-    --PENDING    : 신청 완료, 결제 대기 (24시간 이내 결제 필요..)
-    --CONFIRMED  : 결제 완료, 수강 확정
-    --CANCELLED  : 취소됨 (본인 취소 or 24h 미결제 배치 처리)
-    --WAITLISTED : 정원 초과로 대기 중
+    -- PENDING    : 신청 완료, 결제 대기 (24시간 이내 결제 필요..)
+    -- CONFIRMED  : 결제 완료, 수강 확정
+    -- CANCELLED  : 취소됨 (본인 취소 or 24h 미결제 배치 처리)
+    -- WAITLISTED : 정원 초과로 대기 중
     waitlist_order  INT, -- WAITLISTED 일 때만 값 존재
     enrolled_at     TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     paid_at         TIMESTAMP, -- CONFIRMED 전환 시각 (취소 기간 계산 기준)
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS enrollments (
     CONSTRAINT uk_enrollment_lecture_user UNIQUE (lecture_id, user_id)
     );
 
---LIKES(찜)
+-- LIKES(찜)
 CREATE TABLE IF NOT EXISTS likes (
     id          BIGINT      NOT NULL AUTO_INCREMENT,
     lecture_id  BIGINT      NOT NULL,
@@ -73,18 +73,18 @@ CREATE TABLE IF NOT EXISTS likes (
     );
 
 -- 강의 목록: 상태 필터 + 정렬
-CREATE INDEX IF NOT EXISTS idx_lectures_status ON lectures (status);
-CREATE INDEX IF NOT EXISTS idx_lectures_like_count ON lectures (like_count DESC);
-CREATE INDEX IF NOT EXISTS idx_lectures_created_at ON lectures (created_at DESC);
+CREATE INDEX idx_lectures_status ON lectures (status);
+CREATE INDEX idx_lectures_like_count ON lectures (like_count DESC); -- 인기순
+CREATE INDEX idx_lectures_created_at ON lectures (created_at DESC); -- 최신순
 
 -- 강사 본인 강의 목록
-CREATE INDEX IF NOT EXISTS idx_lectures_creator_id ON lectures (creator_id);
+CREATE INDEX idx_lectures_creator_id ON lectures (creator_id);
 
 -- 수강생 신청 내역 조회 (마이페이지)
-CREATE INDEX IF NOT EXISTS idx_enrollments_user_status ON enrollments (user_id, status);
+CREATE INDEX idx_enrollments_user_status ON enrollments (user_id, status);
 
 -- 강의별 수강생 목록 조회 (크리에이터 전용)
-CREATE INDEX IF NOT EXISTS idx_enrollments_lecture_id ON enrollments (lecture_id);
+CREATE INDEX idx_enrollments_lecture_id ON enrollments (lecture_id);
 
 -- 대기열 순번 처리
-CREATE INDEX IF NOT EXISTS idx_enrollments_waitlist ON enrollments (lecture_id, waitlist_order);
+CREATE INDEX idx_enrollments_waitlist ON enrollments (lecture_id, waitlist_order);
